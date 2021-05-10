@@ -13,20 +13,20 @@ public class Percolation {
     private int lastRow; // only for debugging
     private int lastCol; // only for debugging
 
-    private void checkCoordinates(int row, int column) throws IllegalArgumentException {
+    private void checkCoordinates(int row, int column)  {
         if (row < 1 || row > squareSize)
             throw new IllegalArgumentException("Row out of bounds");
         if (column < 1 || column > squareSize)
             throw new IllegalArgumentException("Column out of bounds");
     }
 
-    private int position(int row, int column) throws IllegalArgumentException {
+    private int position(int row, int column)  {
         checkCoordinates(row, column);
         return (row - 1) * squareSize + column;
     }
 
     // constructor
-    public Percolation(int n) throws IllegalArgumentException {
+    public Percolation(int n)  {
         if (n < 1)
             throw new IllegalArgumentException("Cannot be less than 1");
         squareSize = n;
@@ -42,7 +42,7 @@ public class Percolation {
         howManyCurrentOpened = 0;
     }
 
-    public void open(int row, int col) throws IllegalArgumentException {
+    public void open(int row, int col)  {
         if (isOpen(row, col))
             return;
         lastRow = row;  // only for debugging
@@ -66,10 +66,14 @@ public class Percolation {
             union(pos, pos + 1);
     }
 
-    public boolean isOpen(int row, int col) throws IllegalArgumentException {
+    public boolean isOpen(int row, int col)  {
         return sites[position(row, col)];
     }
-
+	public boolean isFull(int row, int col) {
+        checkCoordinates(row, col);
+        int root = findRoot(position(row, col));
+        return 0 == root; // the end found
+    }
     public boolean percolates() {
         return roots[0] == roots[squareSize * squareSize + 1]; // if virtuals connect
     }
@@ -78,7 +82,7 @@ public class Percolation {
         return howManyCurrentOpened;
     }
 
-    private void union(int pos1, int pos2) throws IllegalArgumentException {
+    private void union(int pos1, int pos2)  {
         if (pos1 < 0 ||
                 pos2 < 0 ||
                 pos1 > squareSize * squareSize + 1 ||
@@ -117,7 +121,7 @@ public class Percolation {
         treeSize[root2] = newWeight;
     }
 
-    private int findRoot(int pos) throws IllegalArgumentException {
+    private int findRoot(int pos)  {
         if (pos < 0 || pos > squareSize * squareSize + 1)
             throw new IllegalArgumentException("Position ot of boundaries");
         while (roots[pos] != pos) { // go up till the end
@@ -126,7 +130,7 @@ public class Percolation {
         return roots[pos]; // the end found
     }
 
-    private int findRoot(int row, int col) throws IllegalArgumentException {
+    private int findRoot(int row, int col)  {
         int pos = position(row, col);
         while (roots[pos] != pos)
             pos = roots[pos];
@@ -134,7 +138,7 @@ public class Percolation {
     }
 
     // test functions, first of all printing
-    public void print() throws IllegalArgumentException {
+    public void print()  {
         System.out.print("squareSize = " + squareSize);
         System.out.print(" Last row = " + lastRow + " Last column = " + lastCol + "\n");
         System.out.print("; Percolates? : " + percolates());
