@@ -10,30 +10,23 @@ import edu.princeton.cs.algs4.StdStats;
 public class PercolationStats {
 
     private static final double CONFIDENCE_95 = 1.96;
-    // private int n;
-    // private final int trials;
-    private final int[] results;
-
+    private final double[] results;
 
     // perform independent trials on an n-by-n grid
     public PercolationStats(int n, int trials) {
-        // n = _n;
-        // trials = _trials;
-        results = new int[trials];
+        results = new double[trials];
         for (int i = 0; i < trials; i++) {
-            Percolation perc = new Percolation(n);
-            while (!perc.percolates()) {
+            Percolation percolator = new Percolation(n);
+            while (!percolator.percolates()) {
                 int row = StdRandom.uniform(n) + 1;
                 int col = StdRandom.uniform(n) + 1;
-                while (true) {
-                    if (!perc.isOpen(row, col))
-                        break;
+                while (percolator.isOpen(row, col)) {
                     row = StdRandom.uniform(n) + 1;
                     col = StdRandom.uniform(n) + 1;
                 }
-                perc.open(row, col);
+                percolator.open(row, col);
             }
-            results[i] = perc.numberOfOpenSites();
+            results[i] = 1.0 * percolator.numberOfOpenSites() / (n * n);
         }
     }
 
