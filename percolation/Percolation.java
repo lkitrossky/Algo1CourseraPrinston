@@ -9,6 +9,7 @@ public class Percolation {
     private int[] roots;
     private int[] treeSize;
     private final int squareSize;
+    private final int bottom;
     private int howManyCurrentOpened; // excluding virtual up. bottom
     private int lastRow; // only for debugging
     private int lastCol; // only for debugging
@@ -23,6 +24,7 @@ public class Percolation {
         sites[n * n + 1] = true;
         roots = new int[n * n + 2];
         treeSize = new int[n * n + 2];
+        bottom = roots.length - 1;
         for (int i = 0; i < n * n + 2; i++) {
             treeSize[i] = 1;
             roots[i] = i;
@@ -53,18 +55,23 @@ public class Percolation {
         sites[pos] = true;
         // the idea is to connect to open neighbours, left, right, up, bottom
         // if the first or last row - connect to virtual
-        if (1 == row)
-            union(pos, 0); // connect to virtual up
         if (1 < row && isOpen(row - 1, col))
             union(pos, pos - squareSize);
-        if (squareSize == row)
-            union(pos, squareSize * squareSize + 1); // connect to virtual bottom
         if (squareSize > row && isOpen(row + 1, col))
             union(pos, pos + squareSize);
         if (1 < col && isOpen(row, col - 1))
             union(pos, pos - 1);
         if (squareSize > col && isOpen(row, col + 1))
             union(pos, pos + 1);
+        if (1 == row) { // all branch must has path to 0
+            while (roots[pos] != pos) {
+                int next = roots[pos];
+                roots[pos] = 0;
+                pos = next;
+            }
+            roots[pos] = 0;
+        }
+        // I do not know how t deal with the bottom
     }
 
     public boolean isOpen(int row, int col) {
@@ -74,7 +81,13 @@ public class Percolation {
     }
 
     public boolean percolates() {
-        return findRoot(0) == findRoot(squareSize * squareSize + 1);
+        // I do not know how to deal with the bottom
+        // so just check the bottom row
+        for (int i = 1; i <= squareSize; i++) {
+            if (0 == findRoot(squareSize, i))
+                return true;
+        }
+        return false;
     }
 
     public int numberOfOpenSites() {
@@ -94,19 +107,25 @@ public class Percolation {
         int start;
         int newRoot;
         int newWeight = treeSize[root1] + treeSize[root2];
+        if (0 == root1) {
+            start = pos2;  // update all tree 2 to point to 0
+            newRoot = 0;
+        }
+        else if (0 == root2) {
+            start = pos1;  // update all tree 1 to point to 0
+            newRoot = 0;
+        }
         // real union of two trees
-        if (treeSize[root1] > treeSize[root2]) {
+        else if (treeSize[root1] > treeSize[root2]) {
             // tree 2 is smaller, connect it to tree 1
             // 0 is virtual, always precedes, has no root except 0
             start = pos2;  // tree starting with pos2 will be updated
             newRoot = root1;
-            roots[pos2] = pos1;
         }
         else {
             // tree 1 is smaller, connect it to tree 2
             start = pos1;  // tree starting with pos1 will be updated
             newRoot = root2;
-            roots[pos1] = pos2;
         }
         // reconnection of one of trees to the new root
         while (roots[start] != start) {
@@ -115,12 +134,9 @@ public class Percolation {
             treeSize[start] = newWeight; // not needed except to root, for debugging
             start = next;
         }
-        // the main operation one former root connected to another
-        // only one is updated
-        roots[root1] = newRoot;
-        treeSize[root1] = newWeight;
-        roots[root2] = newRoot;
-        treeSize[root2] = newWeight;
+        // we arrived to root that is now a leaf
+        roots[start] = newRoot;
+        treeSize[start] = newWeight;
     }
 
     public boolean isFull(int row, int col) {
@@ -178,7 +194,7 @@ public class Percolation {
         }
         System.out.print("\n\tRoots:\n");
         System.out.print("\tRoot of up: " + findRoot(0));
-        System.out.print("\tRoot of bottom: " + findRoot(roots[roots.length - 1]) + "\n");
+        System.out.print("\tRoot of bottom: " + findRoot(roots[bottom]) + "\n");
         for (int i = 1; i <= squareSize; i++)
             System.out.print(String.format("% d ", i));
         System.out.print("\n");
@@ -194,7 +210,7 @@ public class Percolation {
         }
         System.out.print("\n\tTree sizes: " + squareSize + " ");
         System.out.print("\tTree of up: " + treeSize[0]);
-        System.out.print("\tTree of bottom: " + treeSize[squareSize * squareSize + 1] + "\n");
+        System.out.print("\tTree of bottom: " + treeSize[bottom] + "\n");
         System.out.print(" ");
         for (int i = 1; i <= squareSize; i++)
             System.out.print(String.format("% d ", i));
