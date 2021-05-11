@@ -8,25 +8,13 @@ public class Percolation {
     private boolean[] sites; // false - closed
     private int[] roots;
     private int[] treeSize;
-    private int squareSize;
+    private final int squareSize;
     private int howManyCurrentOpened; // excluding virtual up. bottom
     private int lastRow; // only for debugging
     private int lastCol; // only for debugging
 
-    private void checkCoordinates(int row, int column)  {
-        if (row < 1 || row > squareSize)
-            throw new IllegalArgumentException("Row out of bounds");
-        if (column < 1 || column > squareSize)
-            throw new IllegalArgumentException("Column out of bounds");
-    }
-
-    private int position(int row, int column)  {
-        checkCoordinates(row, column);
-        return (row - 1) * squareSize + column;
-    }
-
     // constructor
-    public Percolation(int n)  {
+    public Percolation(int n) {
         if (n < 1)
             throw new IllegalArgumentException("Cannot be less than 1");
         squareSize = n;
@@ -42,7 +30,20 @@ public class Percolation {
         howManyCurrentOpened = 0;
     }
 
-    public void open(int row, int col)  {
+    private void checkCoordinates(int row, int column) {
+        if (row < 1 || row > squareSize)
+            throw new IllegalArgumentException("Row out of bounds");
+        if (column < 1 || column > squareSize)
+            throw new IllegalArgumentException("Column out of bounds");
+    }
+
+    private int position(int row, int column) {
+        checkCoordinates(row, column);
+        return (row - 1) * squareSize + column;
+    }
+
+
+    public void open(int row, int col) {
         if (isOpen(row, col))
             return;
         lastRow = row;  // only for debugging
@@ -66,23 +67,21 @@ public class Percolation {
             union(pos, pos + 1);
     }
 
-    public boolean isOpen(int row, int col)  {
-        return sites[position(row, col)];
+    public boolean isOpen(int row, int col) {
+        int pos = position(row, col);
+        boolean res = sites[pos];
+        return res;
     }
-	public boolean isFull(int row, int col) {
-        checkCoordinates(row, col);
-        int root = findRoot(position(row, col));
-        return 0 == root; // the end found
-    }
+
     public boolean percolates() {
-        return roots[0] == roots[squareSize * squareSize + 1]; // if virtuals connect
+        return findRoot(0) == findRoot(squareSize * squareSize + 1);
     }
 
     public int numberOfOpenSites() {
         return howManyCurrentOpened;
     }
 
-    private void union(int pos1, int pos2)  {
+    private void union(int pos1, int pos2) {
         if (pos1 < 0 ||
                 pos2 < 0 ||
                 pos1 > squareSize * squareSize + 1 ||
@@ -96,12 +95,15 @@ public class Percolation {
         int newRoot;
         int newWeight = treeSize[root1] + treeSize[root2];
         // real union of two trees
-        if (treeSize[root1] > treeSize[root2]) { // tree 2 is smaller, connect it to tree 1
+        if (treeSize[root1] > treeSize[root2]) {
+            // tree 2 is smaller, connect it to tree 1
+            // 0 is virtual, always precedes, has no root except 0
             start = pos2;  // tree starting with pos2 will be updated
             newRoot = root1;
             roots[pos2] = pos1;
         }
-        else {  // tree 1 is smaller, connect it to tree 2
+        else {
+            // tree 1 is smaller, connect it to tree 2
             start = pos1;  // tree starting with pos1 will be updated
             newRoot = root2;
             roots[pos1] = pos2;
@@ -121,7 +123,14 @@ public class Percolation {
         treeSize[root2] = newWeight;
     }
 
-    private int findRoot(int pos)  {
+    public boolean isFull(int row, int col) {
+        checkCoordinates(row, col);
+        int root = findRoot(row, col);
+        int root0 = findRoot(0);
+        return root0 == root;
+    }
+
+    private int findRoot(int pos) {
         if (pos < 0 || pos > squareSize * squareSize + 1)
             throw new IllegalArgumentException("Position ot of boundaries");
         while (roots[pos] != pos) { // go up till the end
@@ -130,7 +139,7 @@ public class Percolation {
         return roots[pos]; // the end found
     }
 
-    private int findRoot(int row, int col)  {
+    private int findRoot(int row, int col) {
         int pos = position(row, col);
         while (roots[pos] != pos)
             pos = roots[pos];
@@ -138,11 +147,24 @@ public class Percolation {
     }
 
     // test functions, first of all printing
-    public void print()  {
-        System.out.print("squareSize = " + squareSize);
+    private void printIsFull(int row, int col) {
+        checkCoordinates(row, col);
+        boolean res = isFull(row, col);
+        if (res)
+            System.out.print(String.format("row %d column %d is full\n", row, col));
+        else
+            System.out.print(String.format("row %d column %d is not full\n", row, col));
+    }
+
+    private void print() {
+        System.out.print("\nsquareSize = " + squareSize);
         System.out.print(" Last row = " + lastRow + " Last column = " + lastCol + "\n");
         System.out.print("; Percolates? : " + percolates());
         System.out.print("\n\tOverall state:\n");
+
+        for (int i = 1; i <= squareSize; i++)
+            System.out.print(String.format("% 4d  ", i));
+        System.out.print("\n");
         for (int i = 1; i <= squareSize; i++) {
             for (int j = 1; j <= squareSize; j++) {
                 int pos = position(i, j);
@@ -152,81 +174,65 @@ public class Percolation {
                 else
                     System.out.print(" ");
             }
-            System.out.print("\n");
+            System.out.print(String.format("% 6d\n", i));
         }
         System.out.print("\n\tRoots:\n");
+        System.out.print("\tRoot of up: " + findRoot(0));
+        System.out.print("\tRoot of bottom: " + findRoot(roots[roots.length - 1]) + "\n");
+        for (int i = 1; i <= squareSize; i++)
+            System.out.print(String.format("% d ", i));
+        System.out.print("\n");
+        for (int i = 1; i <= 3 * squareSize; i++)
+            System.out.print("-");
+        System.out.print("\n");
         for (int i = 1; i <= squareSize; i++) {
             for (int j = 1; j <= squareSize; j++) {
                 int pos = position(i, j);
-                if (roots[pos] < 10) System.out.print(" ");
-                System.out.print(roots[pos] + " ");
+                System.out.print(String.format("% 3d", roots[pos]));
             }
-            System.out.print("\n");
+            System.out.print(String.format("% 6d\n", i));
         }
         System.out.print("\n\tTree sizes: " + squareSize + " ");
         System.out.print("\tTree of up: " + treeSize[0]);
         System.out.print("\tTree of bottom: " + treeSize[squareSize * squareSize + 1] + "\n");
+        System.out.print(" ");
+        for (int i = 1; i <= squareSize; i++)
+            System.out.print(String.format("% d ", i));
+        System.out.print("\n");
+        for (int i = 1; i <= 3 * squareSize; i++)
+            System.out.print("-");
+        System.out.print("\n");
         for (int i = 1; i <= squareSize; i++) {
             for (int j = 1; j <= squareSize; j++) {
                 int pos = position(i, j);
-                if (treeSize[pos] < 10) System.out.print(" ");
-                System.out.print(treeSize[pos] + " ");
+                System.out.print(String.format("% 3d", treeSize[pos]));
             }
-            System.out.print("\n");
+            System.out.print(String.format("% 6d\n", i));
         }
     }
 
     public static void main(String[] args) {
-        Percolation perc3 = new Percolation(9);
-        perc3.open(1, 1);
-        perc3.open(1, 5);
-        perc3.open(3, 4);
-        perc3.open(3, 5);
-        perc3.open(5, 4);
-        perc3.open(5, 3);
-        perc3.open(6, 1);
-        perc3.open(7, 1);
-        perc3.open(7, 6);
-        perc3.open(6, 6);
-        perc3.open(9, 4);
-        perc3.print();
-        perc3.open(4, 4);
-        perc3.print();
-        perc3.open(6, 3);
-        perc3.print();
-        /*
-        Percolation perc = new Percolation(5);
-        perc.print();
-        perc.open(1, 1);
-        perc.print();
-        perc.open(2, 1);
-        perc.print();
-        perc.open(3, 1);
-        perc.print();
-        perc.open(3, 2);
-        perc.print();
-        perc.open(3, 3);
-        perc.print();
-        perc.open(4, 3);
-        perc.print();
-        perc.open(2, 5);
-        perc.print();
-        perc.open(3, 5);
-        perc.print();
-        perc.open(5, 3);
-        perc.print();
-        Percolation perc2 = new Percolation(7);
-        perc2.open(2, 2);
-        perc2.open(2, 3);
-        perc2.open(2, 4);
-        perc2.open(6, 2);
-        perc2.open(6, 3);
-        perc2.open(6, 4);
-        perc2.open(3, 2);
-        perc2.open(4, 2);
-        perc2.open(5, 2);
-        perc2.open(7, 4);
-        perc2.print();
-        */
+        Percolation perc7 = new Percolation(7);
+        perc7.open(6, 1);
+        perc7.open(7, 1);
+        perc7.open(7, 2);
+        perc7.open(7, 4);
+        perc7.open(1, 1);
+        perc7.open(1, 5);
+        perc7.open(2, 5);
+        perc7.open(3, 5);
+        perc7.open(4, 5);
+        perc7.open(5, 5);
+        perc7.open(6, 5);
+        perc7.print();
+        perc7.printIsFull(6, 1);
+        perc7.open(7, 5);
+        perc7.print();
+        perc7.printIsFull(6, 1);
+        perc7.open(2, 1);
+        perc7.open(4, 1);
+        perc7.open(5, 1);
+        perc7.open(3, 1);
+        perc7.print();
     }
 }
