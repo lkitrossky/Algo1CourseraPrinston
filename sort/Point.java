@@ -132,6 +132,7 @@ public class Point implements Comparable<Point> {
         Point p01 = new Point(0, 1);
         Point p10 = new Point(1, 0);
         Point p11 = new Point(1, 1);
+        System.out.println("Changed   = " + p11.toString());
         System.out.println(p00.toString());
         System.out.println(p01.toString());
         System.out.println(p10.toString());

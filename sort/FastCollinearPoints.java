@@ -10,6 +10,7 @@ import edu.princeton.cs.algs4.StdOut;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 
 public class FastCollinearPoints {
@@ -39,54 +40,55 @@ public class FastCollinearPoints {
         numberOfSegments();
     }   // finds all line segments containing 4 points
 
-    private static boolean isSorted(ArrayList<Point> al) {
-        if (al.isEmpty())
-            return false;
-        Iterator<Point> iter = al.iterator();
-        Point previous = iter.next();
-        while (iter.hasNext()) {
-            Point current = iter.next();
-            if (previous.compareTo(current) > 0)
-                return false;
-            previous = current;
-        }
-        return true;
-    }
-
     public int numberOfSegments() {
         if (done)
             return lineSegments.size();
         int pointsAmount = points.length;
+        if (pointsAmount < 4)
+            return 0;
         // lineSegments is the recipient of results
-        for (int i1 = 0; i1 < pointsAmount; i1++) { // all points
+        for (int i1 = 0; i1 < pointsAmount; i1++) { // all points can be left bottom start of ray
             Point[] otherPoints = new Point[pointsAmount - 1];
             int index = 0;
             for (int i2 = 0; i2 < pointsAmount; i2++) {
                 if (i1 == i2)
                     continue;
                 otherPoints[index++] = points[i2];
-            } // lineSegments - all except i1
-            Arrays.sort(otherPoints, points[i1].slopeOrder()); // sorted by slope
-            for (int i2 = 0; i2 < otherPoints.length - 1;
-                 i2++) { // we seek i1, i2 amd two more, so -1 stops
-                ArrayList<Point> ap
-                        = new ArrayList<Point>(); // all points that have slope to i1->i2 in addition to i1, i2
-                ap.add(points[i1]);
-                ap.add(otherPoints[i2]);
-                int i3 = i2 + 1;
-                double slope = points[i1].slopeTo(otherPoints[i2]);
-                while (i3 < otherPoints.length && slope == points[i1].slopeTo(otherPoints[i3])) {
-                    ap.add(otherPoints[i3]);
-                    i3++;
+            } // otherPoints - all except i1
+            Arrays.sort(otherPoints, points[i1].slopeOrder()); // except i1 sorted by slope
+            // initiate slope movement
+            int current = 0;
+            double slope = points[i1]
+                    .slopeTo(otherPoints[current]); // we will check all points on i1, i2 line
+            ArrayList<Point> ap = new ArrayList<Point>();
+            while (current < otherPoints.length) {
+                double currentSlope = points[i1].slopeTo(otherPoints[current]);
+                if (slope == currentSlope) {
+                    ap.add(otherPoints[current]); // we are still in the same slope, cash point
                 }
-                // we collected all points on line i1-i2
-                // now ensure that i1 is the beginning of the segment, start+slope ensure uniqueness
-                if (ap.size() >= 4 && isSorted(ap)) {
-                    LineSegment ls = new LineSegment(ap.get(0), ap.get(ap.size() - 1));
-                    lineSegments.add(ls);
+                else { // slope finished
+                    if (ap.size() >= 3) { // in addition to i1 we have at least three
+                        Collections.sort(ap); // sort to check > i1 and find final
+                        if (ap.get(0).compareTo(points[i1])
+                                > 0) { // i1 in the beginning, cash segment
+                            lineSegments.add(new LineSegment(points[i1], ap.get(ap.size() - 1)));
+                        }
+                    }
+                    // initiate new slope
+                    ap = new ArrayList<Point>();
+                    ap.add(otherPoints[current]);
+                    slope = points[i1].slopeTo(otherPoints[current]);
+                }
+                current++; // in any case, move
+            } // all points except i1 passed
+            // possibly slope is still not collected
+            if (ap.size() >= 3) { // in addition to i1 we have at least three
+                Collections.sort(ap); // sort to check > i1 and find final
+                if (ap.get(0).compareTo(points[i1]) > 0) { // i1 in the beginning, cash segment
+                    lineSegments.add(new LineSegment(points[i1], ap.get(ap.size() - 1)));
                 }
             }
-        }
+        } // every point was i1
         done = true;
         return lineSegments.size();
     }
@@ -130,7 +132,7 @@ public class FastCollinearPoints {
 
             // print and draw the line segments
             FastCollinearPoints collinear = new FastCollinearPoints(points);
-            StdOut.println("Found amount: " + collinear.segments().length);
+            StdOut.println("Found amount: " + collinear.numberOfSegments());
             for (LineSegment segment : collinear.segments()) {
                 StdOut.println(segment);
                 segment.draw();
